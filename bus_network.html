@@ -18,7 +18,20 @@
     <![endif]-->
   </head>
   <style>
-
+  
+div.tooltip {   
+  position: absolute;           
+  text-align: center;           
+  width: 150px;                  
+  height: 80px;                 
+  padding: 2px;             
+  font: 12px sans-serif;        
+  background: lightsteelblue;   
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;  
+  opacity: 0;       
+}
 .node {
   stroke: #fff;
   stroke-width: 1.5px;
@@ -46,8 +59,8 @@
 				</div>
 				<div class="collapse navbar-collapse" id ="example">
 					<ul class="nav navbar-nav">
-						<li class="active"><a href="bus_network.html">Boston Town Bus Network</a></li>
-						<li class="active"><a href="busWard_network.html">Boston Bus Network</a></li>
+						<li class="active"><a href="bus_network.html">Boston Area Town Bus Network</a></li>
+						<li class="active"><a href="busWard_network.html">Boston Inter-City Bus Network</a></li>
 						<li class="active"><a href="contractor_network.html">Contractors</a></li>
 						<li class="active"><a href="runkeeper_network.html">Run Keeper</a></li>
 					</ul>
@@ -68,11 +81,17 @@
 				The nodes are sized by the populations of the town, and the color is based on the total number of stops in each town. 
 				Of the 351 towns in Massachusetts, 86 of them contain a bus stop, and there are a total 483 connections between them, or on average 6 links per node.
 			<p>
-			<img = src="Town_Bus_Map_resize.png" style="width: 800px height:600px">
+		</div>
+		
+		<div class="container" align="center">
+			<p>
+			<img = src="Town_Bus_Map_resize.png" style="width: 600px height:450px">
 			<p>
 				This network represents a hub and spoke model for transportation systems. All roads lead to Boston, and then commuters can make connections to other towns.
 			<p>
 		</div>
+		
+	<div class="container">
 	<script>
 
 	var width = 1280,
@@ -84,7 +103,10 @@
 		.charge(-1700)
 		.linkDistance(30)
 		.size([width, height]);
-
+		
+  	var div = d3.select("body").append("div")   
+  	.attr("class", "tooltip");
+	
 	var svg = d3.select("body").append("svg")
 		.attr("width", width)
 		.attr("height", height);
@@ -119,6 +141,22 @@
 			.attr("class", "node")
 			.attr("r", function(d) {return popScale(d.Population_2010); })
 			.style("fill", function(d) {return stopsScale(d.totalStops); })
+			.on("mouseover", function(d) {      
+        		div.transition()        
+        		.duration(200)      
+        		.style("opacity", .9);      
+        		div.html("Town " + d.Name + "<BR>" 
+				+"Population: " + d.Population_2010 + "<BR>"
+				+ "Total Bus Stops: " + d.totalStops + "<BR>"
+				+ "Area (acres) : " + d.Acres)
+				.style("left", (d3.event.pageX) + "px")     
+				.style("top", (d3.event.pageY - 28) + "px");    
+      		})    
+			.on("mouseleave", function(d) {      
+        		div.transition()        
+        		.duration(200)      
+        		.style("opacity", 0);
+			})
 			.call(force.drag);
 
 		node.append("Name")
@@ -136,12 +174,22 @@
 	});
 
 	</script>	
+	</div>
 	
+	<div class="container">
+	<p>
+	With the City of Boston’s MBTA GTFS data, we constructed a network with all of the individual bus stops in the dataset. In this network, each node represents a stop, and a directed edge connects two stops if a trip goes from the first stop to the second in sequential order (all stations with a parent station were grouped under the parent station as they represent the same physical location). The edge weight is the number of such trips. The nodes were then all sized and colored based on their betweeness centrality, to see which stops are most important in holding the Boston MBTA network together. These stops could be good targets when prioritizing maintenance work, and snow clearing.
+	<p>
+	<img src="Town_bus_centrality.png" style="width: 800px height:400px">
+	<p>
+	This same network can be filtered to reveal only highly travelled routes. The below graph is filtered to include only nodes with an edge weight greater than or equal to 2,000. The network therefore only reveals routes with at least 2,000 distinct trips travelled in the stop_times.csv file. 	<p>
+	<img src="Town_bus_centrality_filtered.png" style="width: 800px height:400px">
+	<p>
+	The below map reveals all the stops, sized and colored in the same way, displayed geographically.
+	<p>
+	<img src="Town_bus_mapping.png" style="width: 400px height:500px">
 	
-	
-	
-	
-	
+	</div>
 	
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>

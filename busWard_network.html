@@ -18,7 +18,19 @@
     <![endif]-->
   </head>
   <style>
-
+div.tooltip {   
+  position: absolute;           
+  text-align: center;           
+  width: 150px;                  
+  height: 60px;                 
+  padding: 2px;             
+  font: 12px sans-serif;        
+  background: lightsteelblue;   
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;  
+  opacity: 0;       
+}
 .node {
   stroke: #fff;
   stroke-width: 1.5px;
@@ -46,8 +58,8 @@
 				</div>
 				<div class="collapse navbar-collapse" id ="example">
 					<ul class="nav navbar-nav">
-						<li class="active"><a href="bus_network.html">Boston Town Bus Network</a></li>
-						<li class="active"><a href="busWard_network.html">Boston Bus Network</a></li>
+						<li class="active"><a href="bus_network.html">Boston Area Town Bus Network</a></li>
+						<li class="active"><a href="busWard_network.html">Boston Inter-City Bus Network</a></li>
 						<li class="active"><a href="contractor_network.html">Contractors</a></li>
 						<li class="active"><a href="runkeeper_network.html">Run Keeper</a></li>
 					</ul>
@@ -62,88 +74,116 @@
 		</div>
 	</header>
 
-		<div class="container">
-		<p>
-			This network graph represents bus routes that connect wards in Boston. Each node represents one of 22 wards in the city of Boston. The links represent a connection that can be made to another ward without a transfer. 
-			Each link is sized based on the population in that ward, and colored according to the number of total bus stops in the ward. The links are weighted according to the number of unique routes that connect the wards.
-		<p>
-		<p>
-		.The data for this network is created from the MBTA route schedule, and stop locations, and the shapefiles that describe the ward boundaries and population statistics. 
-		We refer to this type of network as a ‘hairball’ – and motivates the search for better representations of networks. The fully represented network contains 22 nodes and 180 links.
-		<p>
-		<p>
-		A tmap of Boston Wards and bus stops projects data geographically; however, the amount of data projected can quickly overwhelm our ability to understand the connections between the wards.
-		<p>
-		<img src = "Boston_Ward_Map_resize.png" style="width:600px;height:450px" >
+	<div class="container">
+				<p>
+					This network graph represents bus routes that connect wards in Boston. Each node represents one of 22 wards in the city of Boston. The links represent a connection that can be made to another ward without a transfer. 
+					Each node is sized based on the population in that ward, and colored according to the number of total bus stops in the ward. The links are weighted according to the number of unique routes that connect the wards.
+				<p>
+				<p>
+				.The data for this network is created from the MBTA route schedule, and stop locations, and the shapefiles that describe the ward boundaries and population statistics. 
+				We refer to this type of network as a ‘hairball’ – and motivates the search for better representations of networks. The fully represented network contains 22 nodes and 180 links.
+				<p>
+				<p>
+				A tmap of Boston Wards and bus stops projects data geographically; however, the amount of data projected can quickly overwhelm our ability to understand the connections between the wards.
+				<p>
 		</div>
-	
-	<script>
+	<div class="container" align ="center">
+			<img src="Boston_Ward_Map_resize.png" style="width:600px height:500px" align ="middle">
+	</div>
 
-	var width = 1280,
-		height = 900;
+	<div class="container" align ="center">
+			<script>
+			var width = 1200,
+				height = 600;
 
-	var color = d3.scale.category20();
+			var color = d3.scale.category20();
 
-	var force = d3.layout.force()
-		.charge(-12000)
-		.linkDistance(30)
-		.size([width, height]);
+			var force = d3.layout.force()
+				.charge(-12000)
+				.linkDistance(30)
+				.size([width, height]);
+			
+			var div = d3.select("body").append("div")   
+			.attr("class", "tooltip");
+			
+			var svg = d3.select("body").append("svg")
+				.attr("width", width)
+				.attr("height", height);
 
-	var svg = d3.select("body").append("svg")
-		.attr("width", width)
-		.attr("height", height);
+			d3.json("graph_wards_all.json", function(error, graph) {
+			  force
+				  .nodes(graph.nodes)
+				  .links(graph.links)
+				  .start();
 
-	d3.json("graph_wards_all.json", function(error, graph) {
-	  force
-		  .nodes(graph.nodes)
-		  .links(graph.links)
-		  .start();
+				var stopsScale = d3.scale.linear()
+								.domain([50,200])
+								.range(["blue","red"])
+								
+				var popScale = d3.scale.linear()
+								.domain([10000,60000])
+								.range([5, 80])
+								
+				var widthScale = d3.scale.linear()
+								.domain([0,16000])
+								.range([1,20])
+			  
+				var link = svg.selectAll(".link")
+				  .data(graph.links)
+				  .enter().append("line")
+					.attr("class", "link")
+					.style("stroke-width", function(d) { return (widthScale(d.value)); });
+				
+				var node = svg.selectAll(".node")
+				  .data(graph.nodes)
+				  .enter().append("circle")
+					.attr("class", "node")
+					.attr("r", function(d) {return popScale(d.Population); })
+					.style("fill", function(d) {return stopsScale(d.totalStops); })
+					.on("mouseover", function(d) {      
+						div.transition()        
+						.duration(200)      
+						.style("opacity", .9);      
+						div.html("Ward " + d.Ward +" - " + d.Name + "<BR>" 
+						+"Population: " + d.Population + "<BR>"
+						+ "Total Bus Stops: " + d.totalStops)  
+						.style("left", (d3.event.pageX) + "px")     
+						.style("top", (d3.event.pageY - 28) + "px");    
+					})
+					.on("mouseleave", function(d) {      
+						div.transition()        
+						.duration(200)      
+						.style("opacity", 0);
+					})
+					.call(force.drag);
 
-		var stopsScale = d3.scale.linear()
-						.domain([50,200])
-						.range(["blue","red"])
-						
-		var popScale = d3.scale.linear()
-						.domain([10000,60000])
-						.range([5, 80])
-						
-		var widthScale = d3.scale.linear()
-						.domain([0,16000])
-						.range([1,20])
-	  
-		var link = svg.selectAll(".link")
-		  .data(graph.links)
-		  .enter().append("line")
-			.attr("class", "link")
-			.style("stroke-width", function(d) { return (widthScale(d.value)); });
-		
-		var node = svg.selectAll(".node")
-		  .data(graph.nodes)
-		  .enter().append("circle")
-			.attr("class", "node")
-			.attr("r", function(d) {return popScale(d.Population); })
-			.style("fill", function(d) {return stopsScale(d.totalStops); })
-			.call(force.drag);
+				node.append("Name")
+				  .text(function(d) { return d.name; });
 
-		node.append("Name")
-		  .text(function(d) { return d.name; });
+				force.on("tick", function() {
+					link.attr("x1", function(d) { return d.source.x; })
+					.attr("y1", function(d) { return d.source.y; })
+					.attr("x2", function(d) { return d.target.x; })
+					.attr("y2", function(d) { return d.target.y; });
 
-		force.on("tick", function() {
-			link.attr("x1", function(d) { return d.source.x; })
-			.attr("y1", function(d) { return d.source.y; })
-			.attr("x2", function(d) { return d.target.x; })
-			.attr("y2", function(d) { return d.target.y; });
+				node.attr("cx", function(d) { return d.x; })
+					.attr("cy", function(d) { return d.y; });
+				});
+			});
 
-		node.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) { return d.y; });
-		});
-	});
-
-	</script>	
+			</script>	
+</div>
 	
 	<div class="container">
-		
-		</div>
+	<p>
+	Using the MBTA GTFS data provided by the City of Boston, we were able to construct bus networks revealing the trip connections between different wards. The dataset included all bus stops in the Greater Boston Area. We first focused on stops within the Boston city limits, and using the Boston wards shapefile, placed each stop in its respective ward, Next, using the stop_times.csv file provided in the GTFS data, we could construct a network with each ward represented by a node, and an edge connecting pairs of wards that had a bus route passing between them. The weight of these edges was calculated by the number of distinct trips along the route, found from the stop_times.csv file. We then calculated the modularity classes in the network, to determine highly interconnected wards. Nodes in the below network were sized based on their degree, and colored by modularity class.
+	<p>
+	<img src="Boston_bus_modularity.png" style="width: 800px height:350px">
+	<p>
+	Next, we applied a betweeness centrality analysis to the wards network to determine which wards are most central to the network. Each node is labeled by its respective ward, and sized and colored by betweeness centrality.
+	<p>
+	<img src="Boston_bus_centrality.png" style="width: 800px height:350px">
+	</div>	
 
 	
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
